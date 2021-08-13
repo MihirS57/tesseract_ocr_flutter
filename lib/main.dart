@@ -37,7 +37,10 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   var fileLocation, fileLocationRoot;
   String fetchedText = "";
-  bool imgLoaded = false, bawImgLoaded = false, otsuImgLoaded = false;
+  bool imgLoaded = false,
+      bawImgLoaded = false,
+      otsuImgLoaded = false,
+      ocrEngaged = false;
   dynamic res;
   File.File file = File.File('');
   Image image = Image.asset('');
@@ -82,6 +85,8 @@ class _MyHomePageState extends State<MyHomePage> {
   } */
 
   loadOTSUImg(String loc) async {
+    fetchedText = "";
+    ocrEngaged = false;
     if (file.path != '' && imgLoaded) {
       res = await ImgProc.threshold(
           await file.readAsBytes(), 80, 255, ImgProc.threshBinary);
@@ -98,8 +103,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   obtainText() async {
+    print('OCR about to fetch');
     fetchedText = await FlutterTesseractOcr.extractText(fileLocation);
     var box = await FlutterTesseractOcr.extractHocr(fileLocation);
+    if (fetchedText.isNotEmpty || fetchedText != null) {
+      ocrEngaged = false;
+      print('OCR Fetched');
+    }
     print("Tesseract: " + fetchedText);
     print("Box: " + box);
     setState(() {});
@@ -150,6 +160,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 RaisedButton(
                   onPressed: () {
+                    ocrEngaged = true;
+                    setState(() {});
                     obtainText();
                   },
                   child: Flexible(
@@ -158,7 +170,14 @@ class _MyHomePageState extends State<MyHomePage> {
                     overflow: TextOverflow.fade,
                   )),
                 ),
-                Text('Your text: $fetchedText'),
+                ocrEngaged
+                    ? Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: CircularProgressIndicator(
+                          color: Colors.blue,
+                        ),
+                      )
+                    : Text('Your text: $fetchedText'),
                 imgLoaded ? image : Container(),
                 /* RaisedButton(
                   onPressed: () {
