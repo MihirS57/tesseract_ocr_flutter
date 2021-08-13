@@ -32,9 +32,9 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  var fileLocation;
+  var fileLocation, fileLocationRoot;
   String fetchedText = "";
-  bool imgLoaded = false;
+  bool imgLoaded = false, resultImgLoaded = false;
   dynamic res;
   File.File file = File.File('');
   Image image = Image.asset('');
@@ -42,19 +42,35 @@ class _MyHomePageState extends State<MyHomePage> {
 
   loadImage(String loc) {
     imgLoaded = true;
+    resultImgLoaded = false;
+    fetchedText = "";
     file = File.File(loc);
     image = Image.file(file);
     setState(() {});
   }
 
-  loadBAWImg() async {
+  loadBAWImg(String loc) async {
     if (file.path != '' && imgLoaded) {
       res = await ImgProc.threshold(
           await file.readAsBytes(), 80, 255, ImgProc.threshBinary);
-      image = Image.memory(res);
+      //bawimg = Image.memory(res);
+      String newLoc = "$fileLocationRoot/${(DateTime.now().toString())}.jpg";
+      File.File(newLoc).writeAsBytes(res);
+      print(newLoc);
+      fileLocation = newLoc;
+      bawimg = Image.file(File.File(newLoc));
+      resultImgLoaded = true;
       print('B&w done');
       setState(() {});
     }
+  }
+
+  obtainText() async {
+    fetchedText = await FlutterTesseractOcr.extractText(fileLocation);
+    var box = await FlutterTesseractOcr.extractHocr(fileLocation);
+    print("Tesseract: " + fetchedText);
+    print("Box: " + box);
+    setState(() {});
   }
 
   @override
@@ -64,53 +80,64 @@ class _MyHomePageState extends State<MyHomePage> {
           title: Text(widget.title),
         ),
         body: Container(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  RaisedButton(
-                    onPressed: () async {
-                      FilePickerResult? file = await FilePicker.platform
-                          .pickFiles(type: FileType.image);
-                      if (file != null) {
-                        fileLocation = file.paths[0];
-                        imgLoaded = true;
-                        loadImage(fileLocation);
-                        //setState(() {});
-                        /* fetchedText =
-                            await FlutterTesseractOcr.extractText(fileLocation);
-                        var box =
-                            await FlutterTesseractOcr.extractHocr(fileLocation);
-                        print("Tesseract: " + fetchedText);
-                        print("Box: " + box);
-                        setState(() {}); */
-                      }
-                    },
-                    child: Text('Select File'),
-                  ),
-                  SizedBox(
-                    width: 15,
-                  ),
-                  Flexible(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    RaisedButton(
+                      onPressed: () async {
+                        FilePickerResult? file = await FilePicker.platform
+                            .pickFiles(type: FileType.image);
+                        if (file != null) {
+                          fileLocation = file.paths[0];
+                          fileLocationRoot = fileLocation.toString().substring(
+                              0, fileLocation.toString().lastIndexOf('/'));
+                          print(fileLocation);
+                          print(fileLocationRoot);
+                          imgLoaded = true;
+                          loadImage(fileLocation);
+                          setState(() {});
+                          /*  */
+                        }
+                      },
+                      child: Text('Select File'),
+                    ),
+                    SizedBox(
+                      width: 15,
+                    ),
+                    Flexible(
+                        child: Text(
+                      'File: $fileLocation',
+                      overflow: TextOverflow.fade,
+                    )),
+                  ],
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                RaisedButton(
+                  onPressed: () {
+                    obtainText();
+                  },
+                  child: Flexible(
                       child: Text(
-                    'File: $fileLocation',
+                    'Obtain Text',
                     overflow: TextOverflow.fade,
                   )),
-                ],
-              ),
-              SizedBox(
-                height: 100,
-              ),
-              Text('Your text: $fetchedText'),
-              RaisedButton(
-                onPressed: () {
-                  loadBAWImg();
-                },
-                child: Text('B&W it'),
-              ),
-              imgLoaded ? image : Container()
-            ],
+                ),
+                Text('Your text: $fetchedText'),
+                RaisedButton(
+                  onPressed: () {
+                    loadBAWImg(fileLocation);
+                  },
+                  child: Text('Black & White it'),
+                ),
+                imgLoaded ? image : Container(),
+                resultImgLoaded ? bawimg : Container(),
+              ],
+            ),
           ),
         ));
   }
