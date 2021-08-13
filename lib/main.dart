@@ -1,6 +1,9 @@
+import 'dart:io' as File;
 import 'package:flutter/material.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:opencv/opencv.dart';
+import 'package:opencv/core/core.dart';
 
 void main() {
   runApp(MyApp());
@@ -32,8 +35,28 @@ class _MyHomePageState extends State<MyHomePage> {
   var fileLocation;
   String fetchedText = "";
   bool imgLoaded = false;
+  dynamic res;
+  File.File file = File.File('');
   Image image = Image.asset('');
   Image bawimg = Image.asset('');
+
+  loadImage(String loc) {
+    imgLoaded = true;
+    file = File.File(loc);
+    image = Image.file(file);
+    setState(() {});
+  }
+
+  loadBAWImg() async {
+    if (file.path != '' && imgLoaded) {
+      res = await ImgProc.threshold(
+          await file.readAsBytes(), 80, 255, ImgProc.threshBinary);
+      image = Image.memory(res);
+      print('B&w done');
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,6 +76,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       if (file != null) {
                         fileLocation = file.paths[0];
                         imgLoaded = true;
+                        loadImage(fileLocation);
                         //setState(() {});
                         /* fetchedText =
                             await FlutterTesseractOcr.extractText(fileLocation);
@@ -80,7 +104,9 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               Text('Your text: $fetchedText'),
               RaisedButton(
-                onPressed: () {},
+                onPressed: () {
+                  loadBAWImg();
+                },
                 child: Text('B&W it'),
               ),
               imgLoaded ? image : Container()
