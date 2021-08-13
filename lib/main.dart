@@ -1,9 +1,12 @@
 import 'dart:io' as File;
+import 'dart:typed_data';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:opencv/opencv.dart';
 import 'package:opencv/core/core.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 void main() {
   runApp(MyApp());
@@ -34,33 +37,62 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   var fileLocation, fileLocationRoot;
   String fetchedText = "";
-  bool imgLoaded = false, resultImgLoaded = false;
+  bool imgLoaded = false, bawImgLoaded = false, otsuImgLoaded = false;
   dynamic res;
   File.File file = File.File('');
   Image image = Image.asset('');
-  Image bawimg = Image.asset('');
+  Image otsuImg = Image.asset('');
+  //Image bawImg = Image.asset('');
 
   loadImage(String loc) {
     imgLoaded = true;
-    resultImgLoaded = false;
+    bawImgLoaded = false;
+    otsuImgLoaded = false;
     fetchedText = "";
     file = File.File(loc);
     image = Image.file(file);
     setState(() {});
   }
 
-  loadBAWImg(String loc) async {
+  /*int getLuminanceRgb(int r, int g, int b) =>
+      (0.299 * r + 0.587 * g + 0.114 * b).round();
+
+   loadBAWImg() {
+    //final bytes = src.getBytes();
+    var srcByteList;
+    print('Loading BAW $fileLocation');
+    File.File(fileLocation).readAsBytes().then((value) {
+      srcByteList = Uint8List.fromList(value);
+      for (var i = 0, len = srcByteList.length; i < len; i += 4) {
+        final l = getLuminanceRgb(
+            srcByteList[i], srcByteList[i + 1], srcByteList[i + 2]);
+        srcByteList[i] = l;
+        srcByteList[i + 1] = l;
+        srcByteList[i + 2] = l;
+      }
+      String newLoc = "$fileLocationRoot/${(DateTime.now().toString())}B&W.jpg";
+      File.File(newLoc).writeAsBytes(srcByteList);
+      print('B&W: $newLoc');
+      fileLocation = newLoc;
+      bawImgLoaded = true;
+      //bawImg = Image.asset(srcByteList);
+      bawImg = Image.file(File.File(newLoc));
+      setState(() {});
+    });
+  } */
+
+  loadOTSUImg(String loc) async {
     if (file.path != '' && imgLoaded) {
       res = await ImgProc.threshold(
           await file.readAsBytes(), 80, 255, ImgProc.threshBinary);
-      //bawimg = Image.memory(res);
-      String newLoc = "$fileLocationRoot/${(DateTime.now().toString())}.jpg";
+      String newLoc =
+          "$fileLocationRoot/${(DateTime.now().toString())}OTSU.jpg";
       File.File(newLoc).writeAsBytes(res);
-      print(newLoc);
+      print('OTSU: $newLoc');
       fileLocation = newLoc;
-      bawimg = Image.file(File.File(newLoc));
-      resultImgLoaded = true;
-      print('B&w done');
+      otsuImg = Image.file(File.File(newLoc));
+      otsuImgLoaded = true;
+      print('OTSU done');
       setState(() {});
     }
   }
@@ -82,7 +114,7 @@ class _MyHomePageState extends State<MyHomePage> {
         body: Container(
           child: SingleChildScrollView(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Row(
                   children: [
@@ -99,7 +131,6 @@ class _MyHomePageState extends State<MyHomePage> {
                           imgLoaded = true;
                           loadImage(fileLocation);
                           setState(() {});
-                          /*  */
                         }
                       },
                       child: Text('Select File'),
@@ -128,14 +159,21 @@ class _MyHomePageState extends State<MyHomePage> {
                   )),
                 ),
                 Text('Your text: $fetchedText'),
-                RaisedButton(
+                imgLoaded ? image : Container(),
+                /* RaisedButton(
                   onPressed: () {
-                    loadBAWImg(fileLocation);
+                    loadBAWImg();
                   },
                   child: Text('Black & White it'),
+                ), */
+                //bawImgLoaded ? bawImg : Container(),
+                RaisedButton(
+                  onPressed: () {
+                    loadOTSUImg(fileLocation);
+                  },
+                  child: Text('OTSU'),
                 ),
-                imgLoaded ? image : Container(),
-                resultImgLoaded ? bawimg : Container(),
+                otsuImgLoaded ? otsuImg : Container()
               ],
             ),
           ),
