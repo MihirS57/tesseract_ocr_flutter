@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tesseract_ocr/tesseract_ocr.dart';
+import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:file_picker/file_picker.dart';
 
 void main() {
@@ -31,6 +31,9 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   var fileLocation;
   String fetchedText = "";
+  bool imgLoaded = false;
+  Image image = Image.asset('');
+  Image bawimg = Image.asset('');
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,6 +42,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         body: Container(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
@@ -47,24 +51,39 @@ class _MyHomePageState extends State<MyHomePage> {
                       FilePickerResult? file = await FilePicker.platform
                           .pickFiles(type: FileType.image);
                       if (file != null) {
-                        fileLocation = file.paths;
-                        setState(() {});
-                        fetchedText =
-                            await TesseractOcr.extractText(file.paths[0]);
+                        fileLocation = file.paths[0];
+                        imgLoaded = true;
+                        //setState(() {});
+                        /* fetchedText =
+                            await FlutterTesseractOcr.extractText(fileLocation);
+                        var box =
+                            await FlutterTesseractOcr.extractHocr(fileLocation);
+                        print("Tesseract: " + fetchedText);
+                        print("Box: " + box);
+                        setState(() {}); */
                       }
                     },
                     child: Text('Select File'),
                   ),
                   SizedBox(
-                    width: 25,
+                    width: 15,
                   ),
-                  Text('File: $fileLocation')
+                  Flexible(
+                      child: Text(
+                    'File: $fileLocation',
+                    overflow: TextOverflow.fade,
+                  )),
                 ],
               ),
               SizedBox(
                 height: 100,
               ),
-              Text('Your text: $fetchedText')
+              Text('Your text: $fetchedText'),
+              RaisedButton(
+                onPressed: () {},
+                child: Text('B&W it'),
+              ),
+              imgLoaded ? image : Container()
             ],
           ),
         ));
